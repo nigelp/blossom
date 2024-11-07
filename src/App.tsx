@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { getAuth, onAuthStateChanged } from "firebase/auth";
+import { requestNotificationPermission } from './services/notificationService';
 import Navbar from "./components/Navbar";
 import Profile from "./pages/Profile";
 import FindRide from "./pages/FindRide";
@@ -18,6 +19,10 @@ const App = () => {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setIsAuthenticated(!!user);
+      if (user) {
+        // Request notification permissions when user is authenticated
+        requestNotificationPermission();
+      }
       setIsLoading(false);
     });
 

@@ -61,7 +61,7 @@ const RideCard = ({
       }
     };
     loadData();
-  }, [ride.id, ride.userId]);
+  }, [ride.id, ride.userId, ride.status]);
 
   const handleRequest = async () => {
     if (ride.id) {

@@ -1,6 +1,7 @@
 // File: src/services/rideService.ts
 
 import {
+  getDoc,
   collection,
   addDoc,
   query,
@@ -8,11 +9,11 @@ import {
   getDocs,
   deleteDoc,
   doc,
-  getDoc,
   updateDoc,
   Timestamp,
 } from 'firebase/firestore';
 import { auth, db } from '../lib/firebase';
+import { showNotification } from './notificationService';
 
 export interface Ride {
   id?: string;
@@ -300,11 +301,44 @@ export const updateRideRequest = async (
         status: updatedSeats === 0 ? 'dormant' : 'active' 
       });
 
-      // Update the ride's status to 'dormant'
-      // TODO: Send emails to both parties (implement email sending logic here)
+      // Get user details for notification
+      const userDoc = await getDoc(doc(db, 'users', request.userId));
+      const userData = userDoc.data();
+      const rideOwnerDoc = await getDoc(doc(db, 'users', ride.userId));
+      const rideOwnerData = rideOwnerDoc.data();
+
+      // Show notification to the ride requester
+      showNotification('Ride Request Accepted', {
+        body: `Your ride request with ${rideOwnerData?.name || 'the ride owner'} has been accepted for ${ride.date} at ${ride.time}`,
+        tag: `ride-${ride.id}-accepted`,
+      }, request.userId);
+
+      // Show notification to the ride owner
+      showNotification('Ride Request Updated', { 
+        body: `You've accepted a ride request from ${userData?.name || 'a user'}`,
+        tag: `ride-${ride.id}-owner-accepted`,
+      }, ride.userId);
     } else if (status === 'rejected') {
       // Update the ride's status back to 'active'
       await updateDoc(rideRef, { status: 'active' });
+
+      // Get user details for notification
+      const userDoc = await getDoc(doc(db, 'users', request.userId));
+      const userData = userDoc.data();
+      const rideOwnerDoc = await getDoc(doc(db, 'users', ride.userId));
+      const rideOwnerData = rideOwnerDoc.data();
+
+      // Show notification to the ride requester
+      showNotification('Ride Request Rejected', {
+        body: `Your ride request with ${rideOwnerData?.name || 'the ride owner'} has been rejected for ${ride.date} at ${ride.time}`,
+        tag: `ride-${ride.id}-rejected`,
+      }, request.userId);
+
+      // Show notification to the ride owner
+      showNotification('Ride Request Updated', { 
+        body: `You've rejected a ride request from ${userData?.name || 'a user'}`,
+        tag: `ride-${ride.id}-owner-rejected`,
+      }, ride.userId);
     }
     return { success: true };
   } catch (error) {
