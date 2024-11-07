@@ -8,8 +8,7 @@ const firebaseConfig = {
   projectId: "farm-run-7e546",
   storageBucket: "farm-run-7e546.appspot.com",
   messagingSenderId: "955869614315",
-  appId: "1:955869614315:web:3fdd59aad1bc4794a2aeae",
-  measurementId: "G-MEASUREMENT_ID"
+  appId: "1:955869614315:web:3fdd59aad1bc4794a2aeae"
 };
 
 // Initialize Firebase

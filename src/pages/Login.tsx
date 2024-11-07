@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
-import { auth } from '../lib/firebase';
+import { auth, db } from '../lib/firebase';
+import { doc, setDoc } from 'firebase/firestore';
 import { LogIn, UserPlus } from 'lucide-react';
 
 const Login = () => {
@@ -21,7 +22,15 @@ const Login = () => {
       if (isLogin) {
         await signInWithEmailAndPassword(auth, email, password);
       } else {
-        await createUserWithEmailAndPassword(auth, email, password);
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        // Create user profile in Firestore
+        await setDoc(doc(db, 'users', userCredential.user.uid), {
+          email: email,
+          name: '',
+          telephone: '',
+          isPublic: false,
+          createdAt: new Date().toISOString()
+        });
       }
       navigate('/');
     } catch (err: any) {
@@ -33,6 +42,13 @@ const Login = () => {
 
   return (
     <div className="max-w-md mx-auto">
+      <div className="mb-8 text-center">
+        <div className="bg-gradient-to-r from-blue-600 via-blue-500 to-blue-400 text-white py-8 px-4 rounded-lg shadow-lg mb-4">
+          <h1 className="text-4xl font-bold mb-2">Blossom Ride Share</h1>
+          <p className="text-lg opacity-90">Share rides, make connections</p>
+        </div>
+      </div>
+
       <div className="bg-white rounded-lg shadow-md p-8">
         <h2 className="text-2xl font-bold mb-6">
           {isLogin ? 'Login' : 'Create Account'}

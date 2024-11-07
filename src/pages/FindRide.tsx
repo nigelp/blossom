@@ -1,5 +1,7 @@
+// File: src/pages/FindRide.tsx
+
 import { useState, useEffect } from 'react';
-import { getRides, requestRide, type Ride } from '../services/rideService';
+import { getRides, requestRide, checkRequestStatus, type Ride } from '../services/rideService';
 import RideCard from '../components/RideCard';
 import { auth } from '../lib/firebase';
 
@@ -15,11 +17,7 @@ const FindRide = () => {
         const fetchedRides = await getRides();
         // Filter out user's own rides
         const otherRides = fetchedRides.filter(ride => ride.userId !== auth.currentUser?.uid);
-        // Sort by date
-        const sortedRides = otherRides.sort((a, b) => 
-          new Date(a.date).getTime() - new Date(b.date).getTime()
-        );
-        setRides(sortedRides);
+        setRides(otherRides);
       } catch (err: any) {
         console.error('Error fetching rides:', err);
         setError(err.message || 'Failed to load rides');

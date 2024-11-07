@@ -8,8 +8,8 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       manifest: {
-        name: 'Car Share',
-        short_name: 'Car Share',
+        name: 'Blossom',
+        short_name: 'Blossom',
         theme_color: '#2563eb',
         background_color: '#ffffff',
         display: 'standalone',

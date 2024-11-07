@@ -1,5 +1,20 @@
+// File: src/components/RideCard.tsx
+
 import { format } from 'date-fns';
-import { MapPin, Clock, Users, Trash2, CheckCircle2, PencilIcon, EyeOff, Phone, Mail } from 'lucide-react';
+import {
+  MapPin,
+  Clock,
+  Users,
+  Trash2,
+  PencilIcon,
+  EyeOff,
+  Eye,
+  Phone,
+  Mail,
+  CheckCircle2,
+  XCircle,
+  Hourglass,
+} from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { checkRequestStatus } from '../services/rideService';
 import { getUserById } from '../services/userService';
@@ -13,23 +28,24 @@ interface RideCardProps {
   isRequesting?: boolean;
   showRequest?: boolean;
   onDelete?: () => void;
-  onToggleDormant?: () => void;
+  onToggleStatus?: () => void;
   onEdit?: () => void;
   showActions?: boolean;
 }
 
-const RideCard = ({ 
-  ride, 
-  onRequest, 
-  isRequesting, 
-  showRequest = true, 
+const RideCard = ({
+  ride,
+  onRequest,
+  isRequesting,
+  showRequest = true,
   onDelete,
-  onToggleDormant,
+  onToggleStatus,
   onEdit,
-  showActions = false
+  showActions = false,
 }: RideCardProps) => {
   const [seatsNeeded, setSeatsNeeded] = useState(1);
-  const [requestStatus, setRequestStatus] = useState<'none' | 'requested' | 'accepted'>('none');
+  const [requestStatus, setRequestStatus] =
+    useState<'none' | 'pending' | 'accepted' | 'rejected'>('none');
   const [owner, setOwner] = useState<UserProfile | null>(null);
   const formattedDate = format(new Date(ride.date), 'MMM do, yyyy');
 
@@ -38,7 +54,7 @@ const RideCard = ({
       if (ride.id && auth.currentUser) {
         const [status, ownerData] = await Promise.all([
           checkRequestStatus(ride.id, auth.currentUser.uid),
-          getUserById(ride.userId)
+          getUserById(ride.userId),
         ]);
         setRequestStatus(status);
         setOwner(ownerData);
@@ -50,7 +66,7 @@ const RideCard = ({
   const handleRequest = async () => {
     if (ride.id) {
       await onRequest(ride.id, seatsNeeded);
-      setRequestStatus('requested');
+      setRequestStatus('pending');
     }
   };
 
@@ -63,12 +79,21 @@ const RideCard = ({
         </div>
       );
     }
-    
-    if (requestStatus === 'requested') {
+
+    if (requestStatus === 'pending') {
       return (
-        <div className="flex items-center gap-2 text-blue-600 px-4 py-2">
-          <CheckCircle2 className="w-5 h-5" />
-          <span>Requested</span>
+        <div className="flex items-center gap-2 text-yellow-600 px-4 py-2">
+          <Hourglass className="w-5 h-5" />
+          <span>Pending</span>
+        </div>
+      );
+    }
+
+    if (requestStatus === 'rejected') {
+      return (
+        <div className="flex items-center gap-2 text-red-600 px-4 py-2">
+          <XCircle className="w-5 h-5" />
+          <span>Rejected</span>
         </div>
       );
     }
@@ -99,7 +124,11 @@ const RideCard = ({
   };
 
   return (
-    <div className={`bg-white rounded-lg shadow-md p-6 ${ride.dormant ? 'opacity-60' : ''}`}>
+    <div
+      className={`bg-white rounded-lg shadow-md p-6 ${
+        ride.status !== 'active' ? 'opacity-60' : ''
+      }`}
+    >
       <div className="flex justify-between items-start">
         <div className="space-y-4">
           {owner && (
@@ -119,26 +148,45 @@ const RideCard = ({
               )}
             </div>
           )}
-          
+
           <div className="flex items-center text-gray-600">
             <MapPin className="w-5 h-5 mr-2" />
-            <span>{ride.pickup}</span>
+            {requestStatus === 'accepted' ? (
+              <a
+                href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(ride.pickup)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-600 hover:text-blue-800 hover:underline"
+              >
+                {ride.pickup}
+              </a>
+            ) : (
+              <span>{ride.pickup}</span>
+            )}
           </div>
-          
+
           <div className="flex items-center text-gray-600">
             <Clock className="w-5 h-5 mr-2" />
-            <span>{formattedDate} at {ride.time}</span>
+            <span>
+              {formattedDate} at {ride.time}
+            </span>
           </div>
-          
+
           <div className="flex items-center text-gray-600">
             <Users className="w-5 h-5 mr-2" />
             <span>{ride.seats} seats available</span>
           </div>
+
+          <div className="flex items-center text-gray-600">
+            <span className="font-semibold">Status:</span>
+            <span className="ml-2 capitalize">{ride.status}</span>
+          </div>
         </div>
 
-        <div className="flex space-x-2">
+        <div className="flex flex-col items-end space-y-2">
           {showActions && (
-            <>
+            <div className="flex space-x-2">
+              {ride.status === 'dormant' && (
               <button
                 onClick={onEdit}
                 className="text-blue-600 hover:text-blue-700 p-2 hover:bg-blue-50 rounded-lg transition-colors"
@@ -146,13 +194,23 @@ const RideCard = ({
               >
                 <PencilIcon className="w-5 h-5" />
               </button>
+              )}
               <button
-                onClick={onToggleDormant}
-                className={`${ride.dormant ? 'text-gray-400' : 'text-gray-600'} hover:text-gray-700 p-2 hover:bg-gray-50 rounded-lg transition-colors`}
-                title={ride.dormant ? "Activate ride" : "Make dormant"}
+                onClick={onToggleStatus}
+                className={`${
+                  ride.status === 'dormant' ? 'text-gray-400' : 'text-gray-600'
+                } hover:text-gray-700 p-2 hover:bg-gray-50 rounded-lg transition-colors`}
+                title={
+                  ride.status === 'dormant' ? 'Activate ride' : 'Make dormant'
+                }
               >
-                <EyeOff className="w-5 h-5" />
+                {ride.status === 'dormant' 
+                  ? <Eye className="w-5 h-5" title="Reactivate ride" /> 
+                  : <EyeOff className="w-5 h-5" title="Make dormant" />
+                }
+                <span className="sr-only">{ride.status === 'dormant' ? 'Reactivate ride' : 'Make dormant'}</span>
               </button>
+
               <button
                 onClick={onDelete}
                 className="text-red-600 hover:text-red-700 p-2 hover:bg-red-50 rounded-lg transition-colors"
@@ -160,10 +218,13 @@ const RideCard = ({
               >
                 <Trash2 className="w-5 h-5" />
               </button>
-            </>
+            </div>
           )}
-          
-          {showRequest && !ride.dormant && ride.seats > 0 && getRequestButton()}
+
+          {showRequest &&
+            ride.status === 'active' &&
+            ride.seats > 0 &&
+            getRequestButton()}
         </div>
       </div>
     </div>

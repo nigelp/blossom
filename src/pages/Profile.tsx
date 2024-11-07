@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Plus, Save } from 'lucide-react';
+import { auth } from '../lib/firebase';
+import { deleteUser } from 'firebase/auth';
 import AddCarModal from '../components/AddCarModal';
 import CarList from '../components/CarList';
 import { getUserProfile, updateUserProfile, type UserProfile } from '../services/userService';
@@ -12,15 +14,15 @@ const Profile = () => {
   const [profile, setProfile] = useState<UserProfile>({
     name: '',
     telephone: '',
-    email: '',
-    isPublic: false
+    email: auth.currentUser?.email || '',
   });
 
   useEffect(() => {
     const loadProfile = async () => {
       try {
         const userProfile = await getUserProfile();
-        setProfile(userProfile);
+        setProfile({
+          ...userProfile,});
       } catch (err: any) {
         setError(err.message || 'Error loading profile');
       }
@@ -48,10 +50,36 @@ const Profile = () => {
     }
   };
 
+  const handleDeleteAccount = async () => {
+    if (!auth.currentUser) return;
+
+    const confirmDelete = window.confirm(
+      'Are you sure you want to delete your account? This action cannot be undone.'
+    );
+
+    if (confirmDelete) {
+      try {
+        await deleteUser(auth.currentUser);
+        // Firebase will automatically sign out the user after deletion
+      } catch (err: any) {
+        console.error('Error deleting account:', err);
+        setError(err.message || 'Failed to delete account. Please try again.');
+      }
+    }
+  };
+
   return (
     <div className="max-w-4xl mx-auto space-y-8">
       <div className="bg-white rounded-lg shadow-md p-6">
-        <h2 className="text-2xl font-bold text-gray-800 mb-6">My Profile</h2>
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-2xl font-bold text-gray-800">My Profile</h2>
+          <button
+            onClick={handleDeleteAccount}
+            className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors"
+          >
+            Delete Account
+          </button>
+        </div>
 
         {error && (
           <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-lg">
@@ -93,24 +121,12 @@ const Profile = () => {
             <input
               type="email"
               value={profile.email}
-              onChange={(e) => setProfile({ ...profile, email: e.target.value })}
+              readOnly
               className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
               required
             />
           </div>
 
-          <div className="flex items-center">
-            <input
-              type="checkbox"
-              id="isPublic"
-              checked={profile.isPublic}
-              onChange={(e) => setProfile({ ...profile, isPublic: e.target.checked })}
-              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-            />
-            <label htmlFor="isPublic" className="ml-2 block text-sm text-gray-700">
-              Make my contact information public to other users
-            </label>
-          </div>
 
           <button
             type="submit"

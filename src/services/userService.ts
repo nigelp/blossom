@@ -1,11 +1,9 @@
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db, auth } from '../lib/firebase';
 
-export interface UserProfile {
-  name: string;
+export interface UserProfile {  name: string;
   telephone: string;
   email: string;
-  isPublic: boolean;
 }
 
 export const getUserProfile = async () => {
@@ -23,8 +21,7 @@ export const getUserProfile = async () => {
     return {
       name: '',
       telephone: '',
-      email: auth.currentUser.email || '',
-      isPublic: false
+      email: auth.currentUser?.email || ''
     };
   } catch (error) {
     console.error('Error getting user profile:', error);
